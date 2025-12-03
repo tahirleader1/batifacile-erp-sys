@@ -27,7 +27,7 @@ export function IronCommands() {
     bankPaymentDate: '',
     paymentReference: '',
     amountPaid: 0,
-    status: 'commandé' as IronCommandStatus,
+    status: 'command' as IronCommandStatus,
     departureNigeriaDate: '',
     expectedArrivalTchad: '',
     vehicleNigeria: '',
@@ -43,7 +43,7 @@ export function IronCommands() {
 
   const [expenseForm, setExpenseForm] = useState({
     date: new Date().toISOString().split('T')[0],
-    stage: 'arrivée cameroun - transbordement' as IronExpenseStage,
+    stage: 'arrive cameroun - transbordement' as IronExpenseStage,
     type: '',
     description: '',
     amount: '',
@@ -87,13 +87,13 @@ export function IronCommands() {
 
   const addItemToCommand = () => {
     if (currentItem.quantity <= 0 || currentItem.unitPrice <= 0) {
-      alert('Veuillez entrer une quantité et un prix valides');
+      alert('Veuillez entrer une quantit et un prix valides');
       return;
     }
 
     const existingItem = commandItems.find(i => i.diameter === currentItem.diameter);
     if (existingItem) {
-      alert('Ce diamètre est déjà ajouté. Modifiez-le directement dans la liste.');
+      alert('Ce diamtre est dj ajout. Modifiez-le directement dans la liste.');
       return;
     }
 
@@ -159,7 +159,7 @@ export function IronCommands() {
       bankPaymentDate: '',
       paymentReference: '',
       amountPaid: 0,
-      status: 'commandé',
+      status: 'command',
       departureNigeriaDate: '',
       expectedArrivalTchad: '',
       vehicleNigeria: '',
@@ -207,7 +207,7 @@ export function IronCommands() {
 
     addExpenseToIronCommand(selectedCommand.id, expense);
 
-    if (expenseForm.vehicleNumber && expenseForm.stage === 'arrivée cameroun - transbordement') {
+    if (expenseForm.vehicleNumber && expenseForm.stage === 'arrive cameroun - transbordement') {
       updateIronCommand(selectedCommand.id, { vehicleCameroun: expenseForm.vehicleNumber });
     }
 
@@ -218,7 +218,7 @@ export function IronCommands() {
   const resetExpenseForm = () => {
     setExpenseForm({
       date: new Date().toISOString().split('T')[0],
-      stage: 'arrivée cameroun - transbordement',
+      stage: 'arrive cameroun - transbordement',
       type: '',
       description: '',
       amount: '',
@@ -237,10 +237,10 @@ export function IronCommands() {
     const discrepancies: IronDiscrepancy[] = selectedCommand.items.map(item => {
       const received = receptionForm.receivedQuantities[item.diameter] || 0;
       const difference = received - item.quantityOrdered;
-      let status: 'conforme' | 'manquant' | 'excédent' = 'conforme';
+      let status: 'conforme' | 'manquant' | 'excdent' = 'conforme';
 
       if (difference < 0) status = 'manquant';
-      else if (difference > 0) status = 'excédent';
+      else if (difference > 0) status = 'excdent';
 
       return {
         diameter: item.diameter,
@@ -275,10 +275,10 @@ export function IronCommands() {
       if (disc.received > 0) {
         const ironProduct = {
           id: `iron-${selectedCommand.id}-${disc.diameter}-${Date.now()}`,
-          name: `Fer à béton HA ${disc.diameter}mm`,
+          name: `Fer  bton HA ${disc.diameter}mm`,
           category: 'fer' as const,
           attributes: {
-            type: 'Haute Adhérence',
+            type: 'Haute Adhrence',
             size: `${disc.diameter}mm`,
             length: '12m',
             weight: `${(disc.diameter * disc.diameter * 0.00617).toFixed(2)}kg/m`,
@@ -300,7 +300,7 @@ export function IronCommands() {
       }
     });
 
-    alert(`✓ Réception confirmée! ${discrepancies.length} articles ajoutés à l'inventaire.`);
+    alert(` Reception confirme! ${discrepancies.length} articles ajoutes a l'inventaire.`);
     setIsReceptionDialogOpen(false);
   };
 
@@ -319,15 +319,15 @@ export function IronCommands() {
 
   const getStatusColor = (status: IronCommandStatus) => {
     const colors = {
-      'commandé': 'bg-gray-500',
-      'payé': 'bg-gray-600',
+      'command': 'bg-gray-500',
+      'pay': 'bg-gray-600',
       'en transit nigeria': 'bg-blue-500',
       'en transit cameroun': 'bg-blue-600',
       'en transit tchad': 'bg-blue-700',
-      'arrivé': 'bg-yellow-500',
-      'en déchargement': 'bg-yellow-600',
-      'vérifié': 'bg-green-500',
-      'clôturé': 'bg-emerald-700'
+      'arriv': 'bg-yellow-500',
+      'en dchargement': 'bg-yellow-600',
+      'vrifi': 'bg-green-500',
+      'cltur': 'bg-emerald-700'
     };
     return colors[status];
   };
@@ -337,7 +337,7 @@ export function IronCommands() {
 
     const discrepancyPct = Math.abs(getDiscrepancyPercentage(command));
 
-    if (command.status === 'vérifié' && discrepancyPct === 0) return 'bg-green-50';
+    if (command.status === 'vrifi' && discrepancyPct === 0) return 'bg-green-50';
     if (discrepancyPct > 5) return 'bg-red-50';
     if (discrepancyPct > 0) return 'bg-orange-50';
     if (command.status.includes('transit')) return 'bg-blue-50';
@@ -346,23 +346,23 @@ export function IronCommands() {
   };
 
   const activeCommands = ironCommands.filter(c =>
-    ['en transit nigeria', 'en transit cameroun', 'en transit tchad', 'arrivé', 'en déchargement'].includes(c.status)
+    ['en transit nigeria', 'en transit cameroun', 'en transit tchad', 'arriv', 'en dchargement'].includes(c.status)
   );
 
   const totalActiveValue = activeCommands.reduce((sum, c) => sum + getTotalCost(c), 0);
   const totalActiveTonnage = activeCommands.reduce((sum, c) => sum + c.totalTonnageOrdered, 0);
 
-  const verifiedCommands = ironCommands.filter(c => c.status === 'vérifié' || c.status === 'clôturé');
+  const verifiedCommands = ironCommands.filter(c => c.status === 'vrifi' || c.status === 'cltur');
   const conformanceRate = verifiedCommands.length > 0
     ? (verifiedCommands.filter(c => Math.abs(getDiscrepancyPercentage(c)) < 2).length / verifiedCommands.length) * 100
     : 0;
 
   const getExpenseTypesByStage = (stage: IronExpenseStage): string[] => {
     const types = {
-      'arrivée cameroun - transbordement': ['Main d\'Œuvre Chargement', 'Location Véhicule Cameroun', 'Autre'],
-      'transport cameroun → tchad': ['Frais de Transport', 'Carburant', 'Péage', 'Autre'],
+      'arrive cameroun - transbordement': ['Main d\'uvre Chargement', 'Location Vhicule Cameroun', 'Autre'],
+      'transport cameroun  tchad': ['Frais de Transport', 'Carburant', 'Page', 'Autre'],
       'frais frontaliers et douanes': ['Sortie Nigeria', 'Douane Cameroun', 'Bascule', 'Douane Tchad', 'Autre'],
-      'arrivée tchad': ['Main d\'Œuvre Déchargement', 'Gardiennage', 'Stockage', 'Autre'],
+      'arrive tchad': ['Main d\'uvre Dchargement', 'Gardiennage', 'Stockage', 'Autre'],
       'autres frais': ['Autre']
     };
     return types[stage] || [];
@@ -411,7 +411,7 @@ export function IronCommands() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Taux de Conformité</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Taux de Conformit</p>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">{conformanceRate.toFixed(1)}%</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
@@ -438,22 +438,22 @@ export function IronCommands() {
           {ironCommands.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <Weight className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-              <p>Aucune commande de fer enregistrée</p>
+              <p>Aucune commande de fer enregistree</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="dark:text-gray-200 w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-700">
                   <tr>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">N° Commande</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">N Commande</th>
                     <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Fournisseur</th>
                     <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Date Commande</th>
                     <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Date Paiement</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">Tonnage Commandé</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">Tonnage Reçu</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">Écart</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">Tonnage Command</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">Tonnage Reu</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">cart</th>
                     <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">Statut</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">Coût Total</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">Cot Total</th>
                     <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">Actions</th>
                   </tr>
                 </thead>
@@ -504,13 +504,13 @@ export function IronCommands() {
                           >
                             <DollarSign className="h-3 w-3" />
                           </Button>
-                          {(command.status === 'arrivé' || command.status === 'en déchargement') && !command.reception && (
+                          {(command.status === 'arriv' || command.status === 'en dchargement') && !command.reception && (
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => openReceptionDialog(command)}
                               className="text-green-600 hover:text-green-700"
-                              title="Réception"
+                              title="Reception"
                             >
                               <Package className="h-3 w-3" />
                             </Button>
@@ -523,7 +523,7 @@ export function IronCommands() {
                               setIsDetailsDialogOpen(true);
                             }}
                             className="text-blue-600 hover:text-blue-700"
-                            title="Voir détails"
+                            title="Voir dtails"
                           >
                             <Eye className="h-3 w-3" />
                           </Button>
@@ -554,7 +554,7 @@ export function IronCommands() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="bg-white dark:bg-gray-800 p-3 rounded border">
-                  <Label>N° Commande (Auto-généré)</Label>
+                  <Label>N Commande (Auto-gnr)</Label>
                   <p className="font-bold text-lg text-blue-600 dark:text-blue-400">{generateCommandNumber()}</p>
                 </div>
 
@@ -605,7 +605,7 @@ export function IronCommands() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="paymentReference">Référence Paiement *</Label>
+                    <Label htmlFor="paymentReference">Rfrence Paiement *</Label>
                     <Input
                       id="paymentReference"
                       value={formData.paymentReference}
@@ -615,7 +615,7 @@ export function IronCommands() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="amountPaid">Montant Payé (FCFA) *</Label>
+                    <Label htmlFor="amountPaid">Montant Pay (FCFA) *</Label>
                     <Input
                       id="amountPaid"
                       type="number"
@@ -637,8 +637,8 @@ export function IronCommands() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="commandé">Commandé</SelectItem>
-                      <SelectItem value="payé">Payé</SelectItem>
+                      <SelectItem value="command">Command</SelectItem>
+                      <SelectItem value="pay">Pay</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -647,12 +647,12 @@ export function IronCommands() {
 
             <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
               <CardHeader>
-                <CardTitle className="text-base">Section 2 - Composition de la Commande (par diamètre de fer)</CardTitle>
+                <CardTitle className="text-base">Section 2 - Composition de la Commande (par diamtre de fer)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-3">
-                    <Label>Diamètre (mm)</Label>
+                    <Label>Diamtre (mm)</Label>
                     <Select
                       value={currentItem.diameter.toString()}
                       onValueChange={(value) => setCurrentItem({ ...currentItem, diameter: parseInt(value) as IronDiameter })}
@@ -668,7 +668,7 @@ export function IronCommands() {
                     </Select>
                   </div>
                   <div className="col-span-3">
-                    <Label>Quantité (tonnes)</Label>
+                    <Label>Quantit (tonnes)</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -699,8 +699,8 @@ export function IronCommands() {
                     <table className="dark:text-gray-200 w-full text-sm">
                       <thead className="bg-gray-100 dark:bg-gray-600">
                         <tr>
-                          <th className="px-2 py-2 text-left">Diamètre</th>
-                          <th className="px-2 py-2 text-right">Quantité (T)</th>
+                          <th className="px-2 py-2 text-left">Diamtre</th>
+                          <th className="px-2 py-2 text-right">Quantit (T)</th>
                           <th className="px-2 py-2 text-right">Prix Unit.</th>
                           <th className="px-2 py-2 text-right">Sous-total</th>
                           <th className="px-2 py-2 text-center">Action</th>
@@ -748,7 +748,7 @@ export function IronCommands() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="departureNigeriaDate">Date de Départ Nigeria</Label>
+                    <Label htmlFor="departureNigeriaDate">Date de Dpart Nigeria</Label>
                     <Input
                       id="departureNigeriaDate"
                       type="date"
@@ -757,7 +757,7 @@ export function IronCommands() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="expectedArrivalTchad">Date d'Arrivée Prévue Tchad</Label>
+                    <Label htmlFor="expectedArrivalTchad">Date d'Arrive Prvue Tchad</Label>
                     <Input
                       id="expectedArrivalTchad"
                       type="date"
@@ -769,7 +769,7 @@ export function IronCommands() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="vehicleNigeria">N° Véhicule Nigeria</Label>
+                    <Label htmlFor="vehicleNigeria">N Vhicule Nigeria</Label>
                     <Input
                       id="vehicleNigeria"
                       value={formData.vehicleNigeria}
@@ -792,18 +792,18 @@ export function IronCommands() {
 
             <Card className="bg-purple-50 border-purple-200">
               <CardHeader>
-                <CardTitle className="text-base">Section 4 - Coût Initial</CardTitle>
+                <CardTitle className="text-base">Section 4 - Cot Initial</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold">Montant Payé au Fournisseur:</span>
+                  <span className="text-lg font-bold">Montant Pay au Fournisseur:</span>
                   <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                     {formData.amountPaid.toLocaleString()} FCFA
                   </span>
                 </div>
                 <div className="pt-3 border-t space-y-2">
                   <p className="text-sm text-orange-600 font-medium">
-                    Les frais de transport et douane seront ajoutés progressivement
+                    Les frais de transport et douane seront ajouts progressivement
                   </p>
                   <div className="bg-yellow-100 p-3 rounded border border-yellow-300">
                     <p className="text-sm text-yellow-800 font-medium flex items-center gap-2">
@@ -846,7 +846,7 @@ export function IronCommands() {
               </div>
 
               <div>
-                <Label htmlFor="expenseStage">Étape *</Label>
+                <Label htmlFor="expenseStage">tape *</Label>
                 <Select
                   value={expenseForm.stage}
                   onValueChange={(value) => {
@@ -857,10 +857,10 @@ export function IronCommands() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="arrivée cameroun - transbordement">Arrivée Cameroun - Transbordement</SelectItem>
-                    <SelectItem value="transport cameroun → tchad">Transport Cameroun → Tchad</SelectItem>
+                    <SelectItem value="arrive cameroun - transbordement">Arrive Cameroun - Transbordement</SelectItem>
+                    <SelectItem value="transport cameroun  tchad">Transport Cameroun  Tchad</SelectItem>
                     <SelectItem value="frais frontaliers et douanes">Frais Frontaliers et Douanes</SelectItem>
-                    <SelectItem value="arrivée tchad">Arrivée Tchad</SelectItem>
+                    <SelectItem value="arrive tchad">Arrive Tchad</SelectItem>
                     <SelectItem value="autres frais">Autres Frais</SelectItem>
                   </SelectContent>
                 </Select>
@@ -873,7 +873,7 @@ export function IronCommands() {
                   onValueChange={(value) => setExpenseForm({ ...expenseForm, type: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner..." />
+                    <SelectValue placeholder="Slectionner..." />
                   </SelectTrigger>
                   <SelectContent>
                     {getExpenseTypesByStage(expenseForm.stage).map(type => (
@@ -900,7 +900,7 @@ export function IronCommands() {
                   id="expenseDescription"
                   value={expenseForm.description}
                   onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
-                  placeholder="Détails du frais"
+                  placeholder="Dtails du frais"
                   required
                 />
               </div>
@@ -917,9 +917,9 @@ export function IronCommands() {
                 />
               </div>
 
-              {expenseForm.stage === 'arrivée cameroun - transbordement' && expenseForm.type === 'Location Véhicule Cameroun' && (
+              {expenseForm.stage === 'arrive cameroun - transbordement' && expenseForm.type === 'Location Vhicule Cameroun' && (
                 <div>
-                  <Label htmlFor="vehicleNumber">N° Véhicule Cameroun</Label>
+                  <Label htmlFor="vehicleNumber">N Vhicule Cameroun</Label>
                   <Input
                     id="vehicleNumber"
                     value={expenseForm.vehicleNumber}
@@ -938,17 +938,17 @@ export function IronCommands() {
                       onValueChange={(value) => setExpenseForm({ ...expenseForm, location: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner..." />
+                        <SelectValue placeholder="Slectionner..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Frontière Nigeria-Cameroun">Frontière Nigeria-Cameroun</SelectItem>
-                        <SelectItem value="Frontière Cameroun-Tchad">Frontière Cameroun-Tchad</SelectItem>
+                        <SelectItem value="Frontire Nigeria-Cameroun">Frontire Nigeria-Cameroun</SelectItem>
+                        <SelectItem value="Frontire Cameroun-Tchad">Frontire Cameroun-Tchad</SelectItem>
                         <SelectItem value="Autre">Autre</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="customsReference">N° Référence Douane</Label>
+                    <Label htmlFor="customsReference">N Rfrence Douane</Label>
                     <Input
                       id="customsReference"
                       value={expenseForm.customsReference}
@@ -976,7 +976,7 @@ export function IronCommands() {
       <Dialog open={isReceptionDialogOpen} onOpenChange={setIsReceptionDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Réception et Vérification de la Commande</DialogTitle>
+            <DialogTitle>Reception et Verification de la Commande</DialogTitle>
           </DialogHeader>
           {selectedCommand && (
             <div className="space-y-6">
@@ -987,7 +987,7 @@ export function IronCommands() {
                 <CardContent className="space-y-3">
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <Label htmlFor="receptionDate">Date de Réception *</Label>
+                      <Label htmlFor="receptionDate">Date de Reception *</Label>
                       <Input
                         id="receptionDate"
                         type="date"
@@ -997,17 +997,17 @@ export function IronCommands() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="receptionLocation">Lieu de Déchargement *</Label>
+                      <Label htmlFor="receptionLocation">Lieu de Dechargement *</Label>
                       <Input
                         id="receptionLocation"
                         value={receptionForm.location}
                         onChange={(e) => setReceptionForm({ ...receptionForm, location: e.target.value })}
-                        placeholder="Ex: Entrepôt Principal"
+                        placeholder="Ex: Entrepot Principal"
                         required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="responsiblePerson">Responsable Réception *</Label>
+                      <Label htmlFor="responsiblePerson">Responsable Reception *</Label>
                       <Input
                         id="responsiblePerson"
                         value={receptionForm.responsiblePerson}
@@ -1022,16 +1022,16 @@ export function IronCommands() {
 
               <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
                 <CardHeader>
-                  <CardTitle className="text-sm">Section 2 - Vérification par Diamètre</CardTitle>
+                  <CardTitle className="text-sm">Section 2 - Vrification par Diamtre</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <table className="dark:text-gray-200 w-full text-sm">
                     <thead className="bg-gray-100 dark:bg-gray-600">
                       <tr>
-                        <th className="px-2 py-2 text-left">Diamètre</th>
-                        <th className="px-2 py-2 text-right">Commandé (T)</th>
-                        <th className="px-2 py-2 text-center">Reçu (T)</th>
-                        <th className="px-2 py-2 text-right">Écart</th>
+                        <th className="px-2 py-2 text-left">Diamtre</th>
+                        <th className="px-2 py-2 text-right">Command (T)</th>
+                        <th className="px-2 py-2 text-center">Reu (T)</th>
+                        <th className="px-2 py-2 text-right">cart</th>
                         <th className="px-2 py-2 text-center">Statut</th>
                       </tr>
                     </thead>
@@ -1102,7 +1102,7 @@ export function IronCommands() {
 
               <Card className="bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
                 <CardHeader>
-                  <CardTitle className="text-sm">Section 3 - Gestion des Écarts</CardTitle>
+                  <CardTitle className="text-sm">Section 3 - Gestion des carts</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
@@ -1135,11 +1135,11 @@ export function IronCommands() {
                         }
                       />
                       <Label htmlFor="extraDeduction">
-                        Montant sera déduit de la prochaine commande
+                        Montant sera deduit de la prochaine commande
                       </Label>
                     </div>
                     <Textarea
-                      placeholder="Notes sur les articles excédentaires"
+                      placeholder="Notes sur les articles excdentaires"
                       value={receptionForm.extraItemsNotes}
                       onChange={(e) => setReceptionForm({ ...receptionForm, extraItemsNotes: e.target.value })}
                     />
@@ -1149,12 +1149,12 @@ export function IronCommands() {
 
               <Card className="bg-purple-50 border-purple-200">
                 <CardHeader>
-                  <CardTitle className="text-sm">Section 4 - Frais de Déchargement</CardTitle>
+                  <CardTitle className="text-sm">Section 4 - Frais de Dchargement</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <Label htmlFor="offloadingCost">Frais Main d'Œuvre (FCFA)</Label>
+                      <Label htmlFor="offloadingCost">Frais Main d'uvre (FCFA)</Label>
                       <Input
                         id="offloadingCost"
                         type="number"
@@ -1189,7 +1189,7 @@ export function IronCommands() {
               <div className="flex gap-3 pt-4">
                 <Button onClick={handleReceiveCommand} className="flex-1 bg-green-600 hover:bg-green-700 h-12">
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Confirmer Réception
+                  Confirmer Reception
                 </Button>
                 <Button variant="outline" onClick={() => setIsReceptionDialogOpen(false)}>
                   Annuler
@@ -1205,12 +1205,12 @@ export function IronCommands() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="h-5 w-5" />
-              Détails de la Commande
+              Dtails de la Commande
             </DialogTitle>
           </DialogHeader>
           {selectedCommand && (
             <div className="space-y-4">
-              <p className="text-center text-gray-500 dark:text-gray-400">Les détails complets seront affichés ici</p>
+              <p className="text-center text-gray-500 dark:text-gray-400">Les dtails complets seront affichs ici</p>
             </div>
           )}
         </DialogContent>

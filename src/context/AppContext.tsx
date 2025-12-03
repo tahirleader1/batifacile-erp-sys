@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Product, Sale, CompanyInfo, PurchaseOrder, POExpense, CementShipment, CementShipmentExpense, IronCommand, IronCommandExpense, IronReception, WoodShipment, WoodShipmentExpense, PaintShipment, PaintShipmentExpense, WarehouseReception, StockMovement, Customer } from '../types';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { Product, Sale, CompanyInfo, PurchaseOrder, POExpense, CementShipment, CementShipmentExpense, IronCommand, IronCommandExpense, IronReception, WoodShipment, WoodShipmentExpense, PaintShipment, PaintShipmentExpense, WarehouseReception, StockMovement, Customer, IronCommandItem } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface AppContextType {
   products: Product[];
@@ -27,10 +28,10 @@ interface AppContextType {
   updateCementShipment: (id: string, shipment: Partial<CementShipment>) => void;
   addExpenseToShipment: (shipmentId: string, expense: CementShipmentExpense) => void;
   recordCementSale: (shipmentId: string, bagsSold: number, revenue: number) => void;
-  addIronCommand: (command: IronCommand) => void;
-  updateIronCommand: (id: string, command: Partial<IronCommand>) => void;
-  addExpenseToIronCommand: (commandId: string, expense: IronCommandExpense) => void;
-  receiveIronCommand: (commandId: string, reception: IronReception) => void;
+  addIronCommand: (command: IronCommand) => Promise<void>;
+  updateIronCommand: (id: string, command: Partial<IronCommand>) => Promise<void>;
+  addExpenseToIronCommand: (commandId: string, expense: IronCommandExpense) => Promise<void>;
+  receiveIronCommand: (commandId: string, reception: IronReception) => Promise<void>;
   addWoodShipment: (shipment: WoodShipment) => void;
   updateWoodShipment: (id: string, shipment: Partial<WoodShipment>) => void;
   addExpenseToWoodShipment: (shipmentId: string, expense: WoodShipmentExpense) => void;
@@ -264,6 +265,148 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [woodShipments, setWoodShipments] = useState<WoodShipment[]>([]);
   const [paintShipments, setPaintShipments] = useState<PaintShipment[]>([]);
 
+  const mapIronCommandToRow = (command: IronCommand) => ({
+    id: command.id,
+    command_number: command.commandNumber,
+    supplier: command.supplier,
+    origin_country: command.originCountry,
+    order_date: command.orderDate,
+    bank_payment_date: command.bankPaymentDate,
+    payment_reference: command.paymentReference,
+    amount_paid: command.amountPaid,
+    status: command.status,
+    total_tonnage_ordered: command.totalTonnageOrdered,
+    total_tonnage_received: command.totalTonnageReceived,
+    departure_nigeria_date: command.departureNigeriaDate,
+    expected_arrival_tchad: command.expectedArrivalTchad,
+    vehicle_nigeria: command.vehicleNigeria,
+    vehicle_cameroun: command.vehicleCameroun,
+    driver_nigeria: command.driverNigeria,
+    driver_cameroun: command.driverCameroun
+  });
+
+  const mapRowToIronCommand = (
+    row: any,
+    items: IronCommandItem[],
+    expenses: IronCommandExpense[],
+    reception?: IronReception
+  ): IronCommand => ({
+    id: row.id,
+    commandNumber: row.command_number,
+    supplier: row.supplier,
+    originCountry: row.origin_country,
+    orderDate: row.order_date,
+    bankPaymentDate: row.bank_payment_date,
+    paymentReference: row.payment_reference,
+    amountPaid: Number(row.amount_paid) || 0,
+    status: row.status,
+    items,
+    totalTonnageOrdered: Number(row.total_tonnage_ordered) || 0,
+    totalTonnageReceived: Number(row.total_tonnage_received) || 0,
+    departureNigeriaDate: row.departure_nigeria_date || undefined,
+    expectedArrivalTchad: row.expected_arrival_tchad || undefined,
+    vehicleNigeria: row.vehicle_nigeria || undefined,
+    vehicleCameroun: row.vehicle_cameroun || undefined,
+    driverNigeria: row.driver_nigeria || undefined,
+    driverCameroun: row.driver_cameroun || undefined,
+    expenses,
+    reception
+  });
+
+  useEffect(() => {
+    const fetchIronCommands = async () => {
+      const { data: commands, error: commandsError } = await supabase
+        .from('iron_commands')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (commandsError) {
+        console.error('Failed to load iron commands from Supabase', commandsError);
+        return;
+      }
+
+      const [{ data: items }, { data: expenses }, { data: receptions }, { data: discrepancies }] = await Promise.all([
+        supabase.from('iron_command_items').select('*'),
+        supabase.from('iron_command_expenses').select('*'),
+        supabase.from('iron_receptions').select('*'),
+        supabase.from('iron_discrepancies').select('*')
+      ]);
+
+      const itemsByCommand = new Map<string, IronCommandItem[]>();
+      (items || []).forEach((item: any) => {
+        const arr = itemsByCommand.get(item.command_id) || [];
+        arr.push({
+          diameter: item.diameter,
+          quantityOrdered: Number(item.quantity_ordered) || 0,
+          quantityReceived: item.quantity_received ? Number(item.quantity_received) : undefined,
+          unitPrice: Number(item.unit_price) || 0,
+          subtotal: Number(item.subtotal) || 0
+        });
+        itemsByCommand.set(item.command_id, arr);
+      });
+
+      const expensesByCommand = new Map<string, IronCommandExpense[]>();
+      (expenses || []).forEach((exp: any) => {
+        const arr = expensesByCommand.get(exp.command_id) || [];
+        arr.push({
+          id: exp.id,
+          date: exp.date,
+          stage: exp.stage,
+          type: exp.type,
+          description: exp.description,
+          amount: Number(exp.amount) || 0,
+          location: exp.location || undefined,
+          customsReference: exp.customs_reference || undefined,
+          vehicleNumber: exp.vehicle_number || undefined,
+          addedBy: exp.added_by
+        });
+        expensesByCommand.set(exp.command_id, arr);
+      });
+
+      const receptionByCommand = new Map<string, IronReception>();
+      (receptions || []).forEach((rec: any) => {
+        const recDiscrepancies = (discrepancies || [])
+          .filter((d: any) => d.reception_id === rec.id)
+          .map((d: any) => ({
+            diameter: d.diameter,
+            ordered: Number(d.ordered) || 0,
+            received: Number(d.received) || 0,
+            difference: Number(d.difference) || 0,
+            status: d.status as 'conforme' | 'manquant' | 'excdent',
+            notes: d.notes || undefined
+          }));
+
+        receptionByCommand.set(rec.command_id, {
+          date: rec.date,
+          location: rec.location,
+          responsiblePerson: rec.responsible_person,
+          discrepancies: recDiscrepancies,
+          missingItemsCompensation: rec.missing_items_compensation,
+          missingItemsNotes: rec.missing_items_notes || undefined,
+          extraItemsDeduction: rec.extra_items_deduction,
+          extraItemsNotes: rec.extra_items_notes || undefined,
+          offloadingCost: Number(rec.offloading_cost) || 0,
+          numberOfWorkers: rec.number_of_workers || 0,
+          offloadingDateTime: rec.offloading_date_time
+        });
+      });
+
+      if (commands) {
+        const mapped = commands.map((c: any) =>
+          mapRowToIronCommand(
+            c,
+            itemsByCommand.get(c.id) || [],
+            expensesByCommand.get(c.id) || [],
+            receptionByCommand.get(c.id)
+          )
+        );
+        setIronCommands(mapped);
+      }
+    };
+
+    fetchIronCommands();
+  }, []);
+
   const addProduct = (product: Product) => {
     setProducts([...products, product]);
   };
@@ -391,23 +534,92 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     updateCementShipment(shipmentId, updates);
   };
 
-  const addIronCommand = (command: IronCommand) => {
-    setIronCommands([command, ...ironCommands]);
+  const addIronCommand = async (command: IronCommand) => {
+    // Insert main command row (let Supabase generate UUID)
+    const { id: _ignoredId, ...insertRow } = mapIronCommandToRow(command);
+    const { data: insertedCommand, error: cmdError } = await supabase
+      .from('iron_commands')
+      .insert(insertRow)
+      .select('id')
+      .single();
+
+    if (cmdError) {
+      console.error('Failed to save iron command to Supabase', cmdError);
+      throw cmdError;
+    }
+
+    const commandId = insertedCommand?.id || command.id;
+
+    // Insert items
+    if (command.items.length > 0) {
+      const itemsPayload = command.items.map(item => ({
+        command_id: commandId,
+        diameter: item.diameter,
+        quantity_ordered: item.quantityOrdered,
+        quantity_received: item.quantityReceived ?? 0,
+        unit_price: item.unitPrice,
+        subtotal: item.subtotal
+      }));
+      const { error: itemsError } = await supabase.from('iron_command_items').insert(itemsPayload);
+      if (itemsError) {
+        console.error('Failed to save iron command items', itemsError);
+        throw itemsError;
+      }
+    }
+
+    setIronCommands(prev => [{ ...command, id: commandId }, ...prev]);
   };
 
-  const updateIronCommand = (id: string, updatedCommand: Partial<IronCommand>) => {
-    setIronCommands(ironCommands.map(c => c.id === id ? { ...c, ...updatedCommand } : c));
+  const updateIronCommand = async (id: string, updatedCommand: Partial<IronCommand>) => {
+    const existing = ironCommands.find(c => c.id === id);
+    if (!existing) return;
+
+    const merged = { ...existing, ...updatedCommand };
+    setIronCommands(prev => prev.map(c => c.id === id ? merged : c));
+
+    const { id: _rowId, ...row } = mapIronCommandToRow(merged);
+    const { error } = await supabase
+      .from('iron_commands')
+      .update(row)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Failed to update iron command in Supabase', error);
+      throw error;
+    }
   };
 
-  const addExpenseToIronCommand = (commandId: string, expense: IronCommandExpense) => {
+  const addExpenseToIronCommand = async (commandId: string, expense: IronCommandExpense) => {
     const command = ironCommands.find(c => c.id === commandId);
     if (!command) return;
 
-    const updatedExpenses = [...command.expenses, expense];
-    updateIronCommand(commandId, { expenses: updatedExpenses });
+    const { data, error } = await supabase
+      .from('iron_command_expenses')
+      .insert({
+        command_id: commandId,
+        date: expense.date,
+        stage: expense.stage,
+        type: expense.type,
+        description: expense.description,
+        amount: expense.amount,
+        location: expense.location,
+        customs_reference: expense.customsReference,
+        vehicle_number: expense.vehicleNumber,
+        added_by: expense.addedBy
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Failed to save iron command expense', error);
+      throw error;
+    }
+
+    const updatedExpenses = [...command.expenses, { ...expense, id: data?.id || expense.id }];
+    setIronCommands(prev => prev.map(c => c.id === commandId ? { ...c, expenses: updatedExpenses } : c));
   };
 
-  const receiveIronCommand = (commandId: string, reception: IronReception) => {
+  const receiveIronCommand = async (commandId: string, reception: IronReception) => {
     const command = ironCommands.find(c => c.id === commandId);
     if (!command) return;
 
@@ -421,27 +633,101 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
     });
 
-    const updates: Partial<IronCommand> = {
-      reception,
-      totalTonnageReceived: totalReceived,
-      items: updatedItems,
-      status: 'vérifié'
-    };
+    // Save reception
+    const { data: receptionRow, error: receptionError } = await supabase
+      .from('iron_receptions')
+      .insert({
+        command_id: commandId,
+        date: reception.date,
+        location: reception.location,
+        responsible_person: reception.responsiblePerson,
+        missing_items_compensation: reception.missingItemsCompensation,
+        missing_items_notes: reception.missingItemsNotes,
+        extra_items_deduction: reception.extraItemsDeduction,
+        extra_items_notes: reception.extraItemsNotes,
+        offloading_cost: reception.offloadingCost,
+        number_of_workers: reception.numberOfWorkers,
+        offloading_date_time: reception.offloadingDateTime
+      })
+      .select('id')
+      .single();
 
+    if (receptionError) {
+      console.error('Failed to save iron reception', receptionError);
+      throw receptionError;
+    }
+
+    const receptionId = receptionRow?.id;
+
+    // Save discrepancies
+    const discrepanciesPayload = reception.discrepancies.map(d => ({
+      reception_id: receptionId,
+      diameter: d.diameter,
+      ordered: d.ordered,
+      received: d.received,
+      difference: d.difference,
+      status: d.status,
+      notes: d.notes
+    }));
+    if (discrepanciesPayload.length > 0) {
+      const { error: discError } = await supabase.from('iron_discrepancies').insert(discrepanciesPayload);
+      if (discError) {
+        console.error('Failed to save discrepancies', discError);
+        throw discError;
+      }
+    }
+
+    // Update items received quantities
+    await Promise.all(
+      updatedItems.map(item =>
+        supabase
+          .from('iron_command_items')
+          .update({ quantity_received: item.quantityReceived })
+          .eq('command_id', commandId)
+          .eq('diameter', item.diameter)
+      )
+    );
+
+    // Optional offloading expense
+    let expensesUpdate = command.expenses;
     if (reception.offloadingCost > 0) {
       const offloadExpense: IronCommandExpense = {
         id: Date.now().toString(),
         date: reception.offloadingDateTime,
-        stage: 'arrivée tchad',
-        type: 'Main d\'Œuvre Déchargement',
-        description: `Déchargement par ${reception.numberOfWorkers} travailleurs`,
+        stage: 'arrive tchad',
+        type: "Main d'oeuvre Dechargement",
+        description: `Dechargement par ${reception.numberOfWorkers} travailleurs`,
         amount: reception.offloadingCost,
-        addedBy: 'Système'
+        addedBy: 'Systeme'
       };
-      updates.expenses = [...command.expenses, offloadExpense];
+      const { data: expRow, error: expErr } = await supabase
+        .from('iron_command_expenses')
+        .insert({
+          command_id: commandId,
+          date: offloadExpense.date,
+          stage: offloadExpense.stage,
+          type: offloadExpense.type,
+          description: offloadExpense.description,
+          amount: offloadExpense.amount,
+          added_by: offloadExpense.addedBy
+        })
+        .select('id')
+        .single();
+      if (expErr) {
+        console.error('Failed to save offloading expense', expErr);
+        throw expErr;
+      }
+      expensesUpdate = [...expensesUpdate, { ...offloadExpense, id: expRow?.id || offloadExpense.id }];
     }
 
-    updateIronCommand(commandId, updates);
+    // Update main command totals/status and sync state
+    await updateIronCommand(commandId, {
+      reception,
+      totalTonnageReceived: totalReceived,
+      items: updatedItems,
+      status: 'vrifi',
+      expenses: expensesUpdate
+    });
   };
 
   const addWoodShipment = (shipment: WoodShipment) => {

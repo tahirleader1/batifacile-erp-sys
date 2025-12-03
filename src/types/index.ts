@@ -250,23 +250,23 @@ export interface CementShipment {
 }
 
 export type IronCommandStatus =
-  | 'commandé'
-  | 'payé'
+  | 'command'
+  | 'pay'
   | 'en transit nigeria'
   | 'en transit cameroun'
   | 'en transit tchad'
-  | 'arrivé'
-  | 'en déchargement'
-  | 'vérifié'
-  | 'clôturé';
+  | 'arriv'
+  | 'en dchargement'
+  | 'vrifi'
+  | 'cltur';
 
 export type IronDiameter = 6 | 8 | 10 | 12 | 14 | 16 | 20 | 25 | 32 | 40;
 
 export type IronExpenseStage =
-  | 'arrivée cameroun - transbordement'
-  | 'transport cameroun → tchad'
+  | 'arrive cameroun - transbordement'
+  | 'transport cameroun  tchad'
   | 'frais frontaliers et douanes'
-  | 'arrivée tchad'
+  | 'arrive tchad'
   | 'autres frais';
 
 export interface IronCommandItem {
@@ -295,7 +295,7 @@ export interface IronDiscrepancy {
   ordered: number;
   received: number;
   difference: number;
-  status: 'conforme' | 'manquant' | 'excédent';
+  status: 'conforme' | 'manquant' | 'excdent';
   notes?: string;
 }
 

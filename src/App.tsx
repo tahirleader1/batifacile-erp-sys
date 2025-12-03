@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
@@ -10,6 +11,7 @@ import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { PartnerTracking } from './pages/PartnerTracking';
 import { CustomersSimple } from './pages/CustomersSimple';
+import { useAuth } from './contexts/AuthContext';
 
 type Page = 'dashboard' | 'pos' | 'inventory' | 'procurement' | 'reports' | 'settings' | 'partner-tracking' | 'customers';
 
@@ -27,6 +29,7 @@ const pageConfig = {
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, loading } = useAuth();
 
   const PageComponent = pageConfig[currentPage].component;
 
@@ -34,6 +37,18 @@ function App() {
     setCurrentPage(page as Page);
     setSidebarOpen(false);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="h-12 w-12 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <AppProvider>
