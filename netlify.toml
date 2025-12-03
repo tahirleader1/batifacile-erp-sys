@@ -4,3 +4,4 @@
 
 [build.environment]
   ROLLUP_WASM = "1"
+  NODE_VERSION = "18"
