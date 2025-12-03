@@ -1,6 +1,8 @@
-import { Calendar, User, Moon, Sun, Menu } from 'lucide-react';
+import { Calendar, User, Moon, Sun, Menu, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../theme-provider';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderProps {
   title: string;
@@ -9,6 +11,8 @@ interface HeaderProps {
 
 export function Header({ title, onMenuClick }: HeaderProps) {
   const { theme, setTheme } = useTheme();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   const today = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long',
@@ -19,6 +23,11 @@ export function Header({ title, onMenuClick }: HeaderProps) {
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -62,6 +71,15 @@ export function Header({ title, onMenuClick }: HeaderProps) {
               <p className="text-xs text-gray-500 dark:text-gray-400">En ligne</p>
             </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="hidden md:inline-flex gap-2"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4" />
+            Déconnexion
+          </Button>
         </div>
       </div>
     </header>
